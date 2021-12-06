@@ -1,17 +1,22 @@
 db.trips.aggregate([
   {
-    $addFields: {
-      duracao: {
-        $subtract: ["$stopTime", "startTime"],
-      },
+    $project: {
+      bikeid: 1,
+      duracaoMedia:
+        {
+          $dateDiff:
+            {
+              startDate: "$startTime",
+              endDate: "$stopTime",
+              unit: "minute",
+            },
+        },
     },
   },
   {
     $group: {
       _id: "$bikeid",
-      duracaoMedia: {
-        $avg: { $divide: ["$duracao", 1000 * 60] },
-      },
+      duracaoMedia: { $avg: "$duracaoMedia" },
     },
   },
   {
@@ -19,16 +24,14 @@ db.trips.aggregate([
       duracaoMedia: -1,
     },
   },
-
-  {
-    $limit: 5,
-  },
-
   {
     $project: {
-      _id: false,
+      _id: 0,
       bikeId: "$_id",
       duracaoMedia: { $ceil: "$duracaoMedia" },
     },
+  },
+  {
+    $limit: 5,
   },
 ]);
